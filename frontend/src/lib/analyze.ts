@@ -16,10 +16,17 @@ export interface AnalyzeRequestBody {
 export async function runAnalysis(
   body: AnalyzeRequestBody
 ): Promise<AnalysisResult> {
-  const backendUrl = process.env.BACKEND_URL || 'https://schemaguard-api-288s.onrender.com';
+  // Support both Vite (import.meta.env) and Node/Next (process.env)
+  const rawUrl =
+    (import.meta as any).env?.VITE_BACKEND_URL ||
+    (typeof process !== 'undefined' ? process.env?.BACKEND_URL : undefined) ||
+    'https://schemaguard-api-288s.onrender.com';
+
+  const backendUrl = rawUrl.replace(/\/+$/, '');
 
   try {
-    const timeoutSignal = AbortSignal.timeout(5000);
+    // 60s timeout to allow for Render free-tier cold starts
+    const timeoutSignal = AbortSignal.timeout(60000);
 
     const transformPromise = fetch(`${backendUrl}/v1/transform`, {
       method: 'POST',
@@ -41,7 +48,7 @@ export async function runAnalysis(
       signal: timeoutSignal,
     });
 
-    // Without an explicit baseline, diff the contract against itself.
+    // Without an explicit baseline, diff the contract against itself
     const baselineContract = body.baseline_contract || body.contract;
 
     const diffPromise = fetch(`${backendUrl}/v1/diff`, {
