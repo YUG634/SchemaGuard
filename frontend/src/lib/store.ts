@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { View, AnalysisResult } from './types';
 import { SAMPLE_CONTRACT, SAMPLE_PAYLOAD, mockAnalysis } from './demo';
+import { runAnalysis } from './analyze';
 
 interface AppState {
   view: View;
@@ -145,29 +146,25 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { contractInput, payloadInput } = get();
     set({ isLoading: true });
 
+    const activeContract = contractInput.trim() || SAMPLE_CONTRACT;
+    const activePayload = payloadInput.trim() || SAMPLE_PAYLOAD;
+
     if (!contractInput.trim() || !payloadInput.trim()) {
       set({
-        contractInput: SAMPLE_CONTRACT,
-        payloadInput: SAMPLE_PAYLOAD,
+        contractInput: activeContract,
+        payloadInput: activePayload,
       });
     }
 
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contract: get().contractInput || SAMPLE_CONTRACT,
-          payload: get().payloadInput || SAMPLE_PAYLOAD,
-        }),
+      // Call the centralized client hitting Render rather than a local /api route
+      const data = await runAnalysis({
+        contract: activeContract,
+        payload: activePayload,
       });
 
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
-
-      const data: AnalysisResult = await res.json();
       const isMock = data.source === 'mock';
+
       set({
         result: data,
         isLoading: false,
@@ -182,7 +179,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
       }
     } catch (err) {
-      console.warn('Backend unavailable, activating demo analysis fallback:', err);
+      console.warn('Analysis execution error:', err);
       const randomRunId =
         typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID().slice(0, 6)
