@@ -16,7 +16,7 @@ export interface AnalyzeRequestBody {
 export async function runAnalysis(
   body: AnalyzeRequestBody
 ): Promise<AnalysisResult> {
-  const backendUrl = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
+  const backendUrl = process.env.BACKEND_URL || 'https://schemaguard-api-288s.onrender.com';
 
   try {
     const timeoutSignal = AbortSignal.timeout(5000);
