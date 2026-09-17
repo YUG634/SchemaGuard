@@ -1,0 +1,6 @@
+{
+  "name": "SchemaGuard",
+  "description": "Spell-check for your API contracts — an AI-powered API contract validator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
