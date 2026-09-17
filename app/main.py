@@ -19,17 +19,14 @@ from app.schemas import (
 
 app = FastAPI(title="SchemaGuard API", version="1.0.0")
 
-# Allow localhost development and all dynamic Vercel deployments
+# Bulletproof CORS: allow all origins, disable credentials (not needed for API payload tokens/JSON)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-    ],
-    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 agent = GuardianInvestigationAgent()
