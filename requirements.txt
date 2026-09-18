@@ -10,3 +10,4 @@ mcp<2
 strands-agents
 python-dotenv
 openaiopenai
+openai
