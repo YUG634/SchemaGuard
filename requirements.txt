@@ -6,4 +6,5 @@ pytest>=8.0.0
 httpx>=0.27.0
 jsonschema>=4.21.0
 mcp>=1.0.0
-mcp<2
+mcp<2strands-agents
+python-dotenv

@@ -1,6 +1,7 @@
 ﻿import json
 import re
 from typing import Any, Dict
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import jsonschema
@@ -16,10 +17,13 @@ from app.schemas import (
     TransformResponse,
     TransformValidation,
 )
+from app.strands_agent import run_strands_investigation
+
+load_dotenv()
 
 app = FastAPI(title="SchemaGuard API", version="1.0.0")
 
-# Bulletproof CORS: allow all origins, disable credentials (not needed for API payload tokens/JSON)
+# Bulletproof CORS: allow all origins, disable credentials
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -134,9 +138,36 @@ async def root_health():
             "/v1/transform",
             "/v1/diagnose",
             "/v1/diff",
+            "/v1/agent/strands",
             "/docs"
         ]
     }
+
+
+@app.post("/v1/agent/strands")
+async def strands_endpoint(request: Request):
+    """Executes multi-strand investigation using AWS Strands Agents SDK + Groq."""
+    body = await get_safe_json_body(request)
+
+    base_contract = body.get("base_contract") or body.get("baseline_contract") or {}
+    updated_contract = body.get("updated_contract") or body.get("candidate_contract") or {}
+
+    if isinstance(base_contract, str):
+        try:
+            base_contract = json.loads(base_contract)
+        except Exception:
+            base_contract = {}
+
+    if isinstance(updated_contract, str):
+        try:
+            updated_contract = json.loads(updated_contract)
+        except Exception:
+            updated_contract = {}
+
+    return await run_strands_investigation(
+        base_contract=base_contract,
+        updated_contract=updated_contract
+    )
 
 
 @app.post("/v1/transform", response_model=TransformResponse)
