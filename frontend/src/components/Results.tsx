@@ -25,7 +25,15 @@ import { ImpactFlow } from './ImpactFlow';
 import { FixCode } from './FixCode';
 
 export const Results: React.FC = () => {
-  const { result, analyze, reset, isLoading } = useAppStore();
+  const {
+    result,
+    analyze,
+    reset,
+    isLoading,
+    strandsData,
+    isStrandsLoading,
+    runStrandsInvestigation,
+  } = useAppStore();
   const [activeAccordion, setActiveAccordion] = useState<number[]>([1, 2, 3]);
 
   if (!result) return null;
@@ -307,11 +315,13 @@ export const Results: React.FC = () => {
           </div>
         </div>
 
-        {/* Monaco Diff Explorer */}
+        {/* Monaco Diff Explorer with AWS Strands Trigger */}
         <DiffExplorer
           violations={violations}
           breakingChanges={isPassed ? [] : diff?.breaking_changes || []}
           passed={isPassed}
+          onInvestigateStrands={runStrandsInvestigation}
+          isStrandsLoading={isStrandsLoading}
         />
 
         {/* Drift Chart */}
@@ -399,12 +409,13 @@ export const Results: React.FC = () => {
           </div>
         </div>
 
-        {/* Canvas Decision-Flow / Blast Radius */}
+        {/* Canvas Decision-Flow / Blast Radius (Aware of AWS Strands Data) */}
         <ImpactFlow
           impactSummary={transform?.impact_summary}
           verdict={derived.breaking > 0 ? 'BREAKING' : derived.warnings > 0 ? 'MEDIUM' : 'LOW'}
           downstreamRisks={impact?.downstream_risks || []}
           downstream={downstreamConsumers}
+          strandsData={strandsData}
         />
 
         {/* Deep Inspection Accordion */}
@@ -598,12 +609,13 @@ export const Results: React.FC = () => {
           </div>
         </div>
 
-        {/* The Fix */}
+        {/* The Fix (Enhanced with AWS Strands Multi-Agent Remediation Suite) */}
         <FixCode
           patchSnippet={impact?.patch_snippet || transform?.patch_snippet || ''}
           strategy={transform?.strategy || 'schema_evolution'}
           source={transform?.source}
           target={transform?.target || (transform as any)?.target_schema}
+          strandsData={strandsData}
         />
       </div>
     </section>

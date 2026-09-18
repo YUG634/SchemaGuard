@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { Cpu } from 'lucide-react';
 import { DownstreamConsumer } from '../lib/types';
+import { StrandsData } from './FixCode';
 
 interface ImpactFlowProps {
   impactSummary?: {
@@ -12,6 +14,7 @@ interface ImpactFlowProps {
   downstreamRisks?: string[] | string;
   downstream?: DownstreamConsumer[];
   endpoint?: string;
+  strandsData?: StrandsData | null;
 }
 
 export const ImpactFlow: React.FC<ImpactFlowProps> = ({
@@ -21,6 +24,7 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
   downstreamRisks = [],
   downstream = [],
   endpoint = 'LIVE ANALYSIS',
+  strandsData,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +32,17 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
 
   const animProgressRef = useRef<number>(0);
   const startTimeRef = useRef<number | null>(null);
+
+  // Derive effective verdict considering AWS Strands Agent analysis
+  const effectiveVerdict = useMemo(() => {
+    if (strandsData?.result?.risk_level) {
+      const risk = strandsData.result.risk_level.toUpperCase();
+      if (risk === 'CRITICAL' || risk === 'HIGH') return 'BREAKING';
+      if (risk === 'MODERATE') return 'MEDIUM';
+      return 'LOW';
+    }
+    return verdict;
+  }, [strandsData, verdict]);
 
   // Normalize downstreamRisks safely into a string array
   const normalizedRisks: string[] = useMemo(() => {
@@ -46,27 +61,37 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
     return [];
   }, [downstreamRisks]);
 
-  // 1. Dynamic downstream consumers mapping
+  // 1. Dynamic downstream consumers mapping (prioritizing AWS Strands results if present)
   const activeConsumers: DownstreamConsumer[] = useMemo(() => {
+    if (strandsData?.result?.blast_radius?.affected_consumers?.length) {
+      return strandsData.result.blast_radius.affected_consumers.map((name) => ({
+        name,
+        severity: effectiveVerdict === 'BREAKING' ? 'breaking' : 'medium',
+      }));
+    }
+
     if (Array.isArray(downstream) && downstream.length > 0) {
       return downstream;
     }
 
     return [];
-  }, [downstream, normalizedRisks, verdict]);
+  }, [strandsData, downstream, effectiveVerdict]);
 
-  // 2. Active reasons list (guaranteed string array)
+  // 2. Active reasons list (integrating Strands risk explanation)
   const activeReasons: string[] = useMemo(() => {
+    if (strandsData?.result?.blast_radius?.risk_explanation) {
+      return [strandsData.result.blast_radius.risk_explanation];
+    }
     if (normalizedRisks.length > 0) {
       return normalizedRisks;
     }
     if (Array.isArray(reasons) && reasons.length > 0) {
       return reasons;
     }
-    return verdict === 'BREAKING'
+    return effectiveVerdict === 'BREAKING'
       ? ['Strict typed consumer decoders hit null pointers or schema validation rejection.']
       : ['Payload satisfies schema constraints; zero consumer service disruptions detected.'];
-  }, [normalizedRisks, reasons, verdict]);
+  }, [strandsData, normalizedRisks, reasons, effectiveVerdict]);
 
   const getColorBySeverity = (severity: 'low' | 'medium' | 'breaking') => {
     switch (severity.toLowerCase()) {
@@ -217,7 +242,7 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
 
       // Central Node
       ctx.save();
-      const isBreaking = verdict === 'BREAKING';
+      const isBreaking = effectiveVerdict === 'BREAKING';
       const centerColor = isBreaking ? '#d94a3d' : '#ff6900';
 
       ctx.beginPath();
@@ -262,7 +287,7 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
     };
-  }, [activeConsumers, hoveredConsumerIndex, verdict, endpoint]);
+  }, [activeConsumers, hoveredConsumerIndex, effectiveVerdict, endpoint]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -313,8 +338,16 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
       <div className="pb-4 border-b border-[#26221d]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.08em] font-medium text-[#6b6660]">
-              MOMENT 4 · CANVAS DECISION-FLOW
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase tracking-[0.08em] font-medium text-[#6b6660]">
+                MOMENT 4 · CANVAS DECISION-FLOW
+              </span>
+              {strandsData && (
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#ff6900]/10 text-[#ff6900] border border-[#ff6900]/25">
+                  <Cpu className="w-3 h-3" />
+                  AWS STRANDS AGENT
+                </span>
+              )}
             </div>
             <h3 className="text-[20px] leading-[1.15] tracking-[-0.02em] font-semibold text-[#f4f1ec] mt-0.5">
               Blast Radius Impact
@@ -327,7 +360,7 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1c1915] border border-[#3a342c] text-[12px] font-mono shrink-0">
             <span
               className={`w-2 h-2 rounded-full ${
-                verdict === 'BREAKING' ? 'bg-[#d94a3d]' : 'bg-[#4d8c35]'
+                effectiveVerdict === 'BREAKING' ? 'bg-[#d94a3d]' : 'bg-[#4d8c35]'
               }`}
             />
             <span className="text-[#a8a29a]">
@@ -356,14 +389,14 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
           </div>
           <div
             className={`text-[32px] font-semibold tracking-tight ${
-              verdict === 'BREAKING'
+              effectiveVerdict === 'BREAKING'
                 ? 'text-[#d94a3d]'
-                : verdict === 'MEDIUM'
+                : effectiveVerdict === 'MEDIUM'
                 ? 'text-[#d99a2b]'
                 : 'text-[#4d8c35]'
             }`}
           >
-            {verdict}
+            {effectiveVerdict}
           </div>
         </div>
 
@@ -376,10 +409,10 @@ export const ImpactFlow: React.FC<ImpactFlowProps> = ({
               <li key={idx} className="flex items-start gap-2.5 font-mono text-[12.5px]">
                 <span
                   className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                    verdict === 'BREAKING' ? 'bg-[#d94a3d]' : 'bg-[#4d8c35]'
+                    effectiveVerdict === 'BREAKING' ? 'bg-[#d94a3d]' : 'bg-[#4d8c35]'
                   }`}
                 />
-                <span className={verdict === 'BREAKING' ? 'text-[#f4f1ec]' : 'text-[#a8a29a]'}>
+                <span className={effectiveVerdict === 'BREAKING' ? 'text-[#f4f1ec]' : 'text-[#a8a29a]'}>
                   {reason}
                 </span>
               </li>
