@@ -80,7 +80,7 @@ export default function App() {
                 Load Demo Spec
               </a>
               <a
-                href="https://github.com"
+                href="https://github.com/YUG634/SchemaGuard"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-[#f4f1ec] transition-colors flex items-center gap-1"
