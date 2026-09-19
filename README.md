@@ -14,7 +14,7 @@
 
 ## 🌐 Live Deployments & Key Links
 
-- **🚀 Interactive Web Application:** [https://frontend-henna-iota-76.vercel.app/](https://frontend-henna-iota-76.vercel.app/)
+- **🚀 Interactive Web Application:** [SchemaGuard/](https://frontend-henna-iota-76.vercel.app/)
 - **⚡ Live Backend API (Render):** [https://schemaguard-api-288s.onrender.com](https://schemaguard-api-288s.onrender.com)
 - **📦 GitHub Repository:** [https://github.com/YUG634/SchemaGuard](https://github.com/YUG634/SchemaGuard)
 
