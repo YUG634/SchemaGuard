@@ -17,7 +17,7 @@
 - **🚀 Interactive Web Application:** [SchemaGuard](https://frontend-henna-iota-76.vercel.app/)
 - **⚡ Live Backend API (Render):** [https://schemaguard-api-288s.onrender.com](https://schemaguard-api-288s.onrender.com)
 - **📦 GitHub Repository:** [https://github.com/YUG634/SchemaGuard](https://github.com/YUG634/SchemaGuard)
-- ** Video Demo:** [Schema Guard Demo video ](https://youtu.be/hdbw69U9hEM?si=4p6dlb1TX_iU_3Vc)
+-  Video Demo: [Schema Guard Demo video ](https://youtu.be/hdbw69U9hEM?si=4p6dlb1TX_iU_3Vc)
 
 ---
 
